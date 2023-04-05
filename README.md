@@ -8,6 +8,7 @@ It might also be the player you're looking for.
 1. Double click to launch full screen mode.
 1. Rigth click to for context menu: play, pause, previous, next.
 1. Mouse wheel to browser images, and stop the play.
+1. Auto do the best fit of image size to dialog.
 1. Preload images to maintain the speed when play fast
 
 ## Get Start
