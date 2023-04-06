@@ -12,9 +12,11 @@ class xdImagePlayer(QtWidgets.QDialog):
         self.images_path = []
         self.current_image_index = 0
         self.is_full_screen = False  # new variable to store full-screen state
+        self.is_moving = False
         self.load_images()
         self.preload_images()
         self.setup_ui()
+        self.dialog_size = self.size()
         self.show_image()
         self.setup_context_menu()
 
@@ -36,7 +38,8 @@ class xdImagePlayer(QtWidgets.QDialog):
         self.images_path = []
         for root, dirs, files in os.walk(self.path):
             for filename in files:
-                if filename.endswith(".jpg") or filename.endswith(".jpeg") or filename.endswith(".png"):
+                if (filename.lower().endswith(".jpg") or 
+                    filename.lower().endswith(".jpeg") or filename.lower().endswith(".png")):
                     filepath = os.path.join(root, filename)
                     self.images_path.append(filepath)
                     #print("filepath added: " + filepath)
@@ -59,6 +62,7 @@ class xdImagePlayer(QtWidgets.QDialog):
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setAlignment(QtCore.Qt.AlignCenter)
         layout.addWidget(self.label)
         self.setLayout(layout)
         self.setMinimumSize(200, 200)
@@ -72,12 +76,12 @@ class xdImagePlayer(QtWidgets.QDialog):
             dialog_size = self.screen().size()
         else:
             dialog_size = self.size()
-            
+
         width_factor = dialog_size.width() / image.width()
         height_factor = dialog_size.height() / image.height()
         factor = min(width_factor, height_factor)
         self.label.clear()
-        scaled_image = image.scaled(image.width() * factor, image.height() * factor, QtCore.Qt.KeepAspectRatio, QtCore.Qt.FastTransformation)
+        scaled_image = image.scaled(int(image.width() * factor), int(image.height() * factor), QtCore.Qt.KeepAspectRatio, QtCore.Qt.FastTransformation)
         pixmap = QtGui.QPixmap.fromImage(scaled_image)
         self.label.setPixmap(pixmap)
 
@@ -123,6 +127,7 @@ class xdImagePlayer(QtWidgets.QDialog):
 
     def toggle_full_screen(self):
         if not self.is_full_screen:
+            self.dialog_size = self.size()
             self.setStyleSheet("background-color:black;")
             self.label.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
             self.showFullScreen()
@@ -130,23 +135,30 @@ class xdImagePlayer(QtWidgets.QDialog):
             self.setStyleSheet("")
             self.label.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
             self.showNormal()
+            self.resize(self.dialog_size)
         self.is_full_screen = not self.is_full_screen
         self.show_image()
 
     def mouseDoubleClickEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             self.toggle_full_screen()
-        super().mouseDoubleClickEvent(event)
+        #super().mouseDoubleClickEvent(event)
         self.show_image()
 
     def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton:
+        if event.button() == QtCore.Qt.LeftButton and not self.is_full_screen:
+            self.is_moving = True
             self.drag_pos = event.globalPos() - self.frameGeometry().topLeft()
             event.accept()
 
     def mouseMoveEvent(self, event):
-        if event.buttons() == QtCore.Qt.LeftButton:
+        if event.buttons() == QtCore.Qt.LeftButton and self.is_moving:
             self.move(event.globalPos() - self.drag_pos)
+            event.accept()
+
+    def mouseReleaseEvent (self, event):
+        if event.button() == QtCore.Qt.LeftButton and self.is_moving:
+            self.is_moving = False
             event.accept()
             
     def resizeEvent(self, event):
